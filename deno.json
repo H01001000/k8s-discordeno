@@ -1,18 +1,7 @@
 {
-  "lint": {
-    "rules": {
-      "tags": ["recommended"],
-      "include": ["ban-untagged-todo"],
-      "exclude": ["no-unused-vars"]
-    }
-  },
-  "fmt": {
-    "options": {
-      "useTabs": false,
-      "lineWidth": 120,
-      "indentWidth": 2,
-      "singleQuote": false,
-      "proseWrap": "preserve"
-    }
+  "tasks": {
+    "rest": "deno run -A --unstable --import-map ./importMap.json ./src/rest/mod.ts",
+    "bot": "deno run -A --unstable --import-map ./importMap.json ./src/bot/mod.ts",
+    "gateway": "deno run -A --unstable --import-map ./importMap.json ./src/gateway/mod.ts"
   }
 }
