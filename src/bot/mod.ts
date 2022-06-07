@@ -2,13 +2,17 @@ import {
   BOT_ID,
   DEVELOPMENT,
   DISCORD_TOKEN,
-  EVENT_HANDLER_PORT,
-  EVENT_HANDLER_SECRET_KEY,
+  EVENT_EXCHANGE_NAME,
   GATEWAY_INTENTS,
+  RABBITMQ_PASSWORD,
+  RABBITMQ_PORT,
+  RABBITMQ_URL,
+  RABBITMQ_USERNAME,
   REST_AUTHORIZATION_KEY,
   REST_PORT,
+  REST_URL,
 } from "../../configs.ts";
-import { createBot, createRestManager, DiscordGatewayPayload } from "../../deps.ts";
+import { connectAmqp, createBot, createRestManager, DiscordGatewayPayload } from "../../deps.ts";
 import logger from "../utils/logger.ts";
 import { updateDevCommands } from "../utils/updateSlash.ts";
 import { BotClient, setupBotClient } from "./botClient.ts";
@@ -29,60 +33,43 @@ setupBotClient(bot);
 bot.rest = createRestManager({
   token: DISCORD_TOKEN,
   secretKey: REST_AUTHORIZATION_KEY,
-  customUrl: `http://localhost:${REST_PORT}`,
+  customUrl: `http://${REST_URL}:${REST_PORT}`,
 });
 
 if (DEVELOPMENT) {
   logger.info(`[DEV MODE] Updating slash commands for dev server.`);
-  await updateDevCommands(bot);
+  //await updateDevCommands(bot);
 } else {
   // THIS WILL UPDATE ALL YOUR GLOBAL COMMANDS ON STARTUP
   // await updateGlobalCommands(bot);
 }
 
-// Start listening on localhost.
-const server = Deno.listen({ port: EVENT_HANDLER_PORT });
-logger.info(
-  `HTTP webserver running.  Access it at:  http://localhost:${EVENT_HANDLER_PORT}/`,
-);
+const connection = await connectAmqp(`amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_URL}:${RABBITMQ_PORT}`);
+const channel = await connection.openChannel();
 
-// Connections to the server will be yielded up as an async iterable.
-for await (const conn of server) {
-  // In order to not be blocking, we need to handle each connection individually
-  // in its own async function.
-  handleRequest(conn);
-}
+channel.declareExchange({
+  exchange: EVENT_EXCHANGE_NAME,
+  durable: true,
+  type: "x-message-deduplication",
+  arguments: {
+    "x-cache-size": 1000,
+    "x-cache-ttl": 10000
+  }
+})
 
-async function handleRequest(conn: Deno.Conn) {
-  // This "upgrades" a network connection into an HTTP connection.
-  const httpConn = Deno.serveHttp(conn);
-  // Each request sent over the HTTP connection will be yielded as an async
-  // iterator from the HTTP connection.
-  for await (const requestEvent of httpConn) {
-    if (
-      !EVENT_HANDLER_SECRET_KEY ||
-      EVENT_HANDLER_SECRET_KEY !==
-        requestEvent.request.headers.get("AUTHORIZATION")
-    ) {
-      return requestEvent.respondWith(
-        new Response(JSON.stringify({ error: "Invalid secret key." }), {
-          status: 401,
-        }),
-      );
-    }
+const queue = await channel.declareQueue({ queue: '', exclusive: true });
+const queueName = queue.queue;
 
-    if (requestEvent.request.method !== "POST") {
-      return requestEvent.respondWith(
-        new Response(JSON.stringify({ error: "Method not allowed." }), {
-          status: 405,
-        }),
-      );
-    }
+channel.bindQueue({ exchange: EVENT_EXCHANGE_NAME, queue: queueName })
 
-    const json = (await requestEvent.request.json()) as {
+await channel.consume(
+  { queue: queueName },
+  async (args, _props, data) => {
+    const json = (JSON.parse(new TextDecoder().decode(data))) as {
       data: DiscordGatewayPayload;
       shardId: number;
     };
+
     // EMITS RAW EVENT
     bot.events.raw(bot, json.data, json.shardId);
 
@@ -96,11 +83,6 @@ async function handleRequest(conn: Deno.Conn) {
 
       bot.handlers[json.data.t]?.(bot, json.data, json.shardId);
     }
-
-    requestEvent.respondWith(
-      new Response(undefined, {
-        status: 204,
-      }),
-    );
-  }
-}
+    await channel.ack({ deliveryTag: args.deliveryTag });
+  },
+);

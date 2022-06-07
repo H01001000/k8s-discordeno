@@ -1,7 +1,7 @@
 import { dotEnvConfig, GatewayIntents } from "./deps.ts";
 
 // Get the .env file that the user should have created, and load the configs.
-const env = dotEnvConfig({ export: true });
+const env = { ...Deno.env.toObject(), ...dotEnvConfig({ export: true }) };
 
 // TODO: REMOVE THESE! THEY ARE BAD FOR YOU! DUH! Seriously, only keep the ones your bot needs!
 export const GATEWAY_INTENTS: (keyof typeof GatewayIntents)[] = [
@@ -36,55 +36,55 @@ export const SHARDS_PER_CLUSTER = env.SHARDS_PER_CLUSTER ? parseInt(env.SHARDS_P
 export const MAX_CLUSTERS = parseInt(env.MAX_CLUSTERS!, 10);
 if (!MAX_CLUSTERS) {
   throw new Error(
-    "Please for the love of god, tell me how many clusters your machine can handle!",
+    "How many clusters can you run on your machine (MAX_CLUSTERS)? Check your .env file!",
   );
 }
 
-export const URL_GATEWAY_PROXY_WILL_FORWARD_TO = env
-  .URL_GATEWAY_PROXY_WILL_FORWARD_TO!;
-if (!URL_GATEWAY_PROXY_WILL_FORWARD_TO) {
+export const REST_URL = env
+  .REST_URL!;
+if (!REST_URL) {
   throw new Error(
-    "Don't you think you need to give a URL where you want your gateway proxy to send events to?",
+    "Hmm, it seems like you don't have somewhere to send http requests to (REST_URL). Please check your .env file!",
   );
 }
 
-export const EVENT_HANDLER_URL = env
-  .EVENT_HANDLER_URL!;
-if (!EVENT_HANDLER_URL) {
+export const REDIS_URL = env
+  .REDIS_URL!;
+if (!REDIS_URL) {
   throw new Error(
-    "Don't you think you need to give a URL where you want your events sent to?",
+    "Hmm, it seems like you don't have a redis DB to connect to (REDIS_URL). Please check your .env file!",
   );
 }
 
-export const GATEWAY_SECRET_KEY = env.GATEWAY_SECRET_KEY!;
-if (!GATEWAY_SECRET_KEY) {
+export const RABBITMQ_URL = env
+  .RABBITMQ_URL!;
+if (!RABBITMQ_URL) {
   throw new Error(
-    "Do you want to be hacked? Add a secret authorization key that can be used to identify requests are from you.",
+    "Hmm, it seems like you don't have a message queue to connect to (QUEUE_URL). Please check your .env file!",
   );
 }
 
 export const REST_AUTHORIZATION_KEY = env.REST_AUTHORIZATION_KEY!;
 if (!REST_AUTHORIZATION_KEY) {
   throw new Error(
-    "Do you want to be hacked? Add a secret authorization key to make sure requests are only made by you.",
-  );
-}
-
-export const EVENT_HANDLER_SECRET_KEY = env.EVENT_HANDLER_SECRET_KEY!;
-if (!EVENT_HANDLER_SECRET_KEY) {
-  throw new Error(
-    "Do you want to be hacked? Add a secret authorization key to make sure requests are only made by you.",
+    "You need to add a REST_AUTHORIZATION_KEY to your .env file!",
   );
 }
 
 export const BOT_ID = BigInt(atob(env.DISCORD_TOKEN.split(".")[0]));
 if (!BOT_ID) {
-  throw new Error("Please enter the BOT ID you want to run this with.");
+  throw new Error(
+    "Hmm, it seems like you didn't put in a valid DISCORD_TOKEN. Check your .env file!",
+  );
 }
 
 export const REST_PORT = env.REST_PORT ? parseInt(env.REST_PORT, 10) : 5000;
-export const GATEWAY_PORT = env.GATEWAY_PORT ? parseInt(env.GATEWAY_PORT, 10) : 8080;
-export const EVENT_HANDLER_PORT = env.EVENT_HANDLER_PORT ? parseInt(env.EVENT_HANDLER_PORT, 10) : 7050;
+export const REDIS_PORT = env.REDIS_PORT ? parseInt(env.REDIS_PORT, 10) : 6379;
+
+export const RABBITMQ_PORT = env.RABBITMQ_PORT ? parseInt(env.RABBITMQ_PORT, 10) : 5672;
+export const EVENT_EXCHANGE_NAME = env.EVENT_EXCHANGE_NAME ? env.EVENT_EXCHANGE_NAME : "event";
+export const RABBITMQ_USERNAME = env.RABBITMQ_USERNAME ? env.RABBITMQ_USERNAME : "guest";
+export const RABBITMQ_PASSWORD = env.RABBITMQ_PASSWORD ? env.RABBITMQ_PASSWORD : "guest";
 
 export const DEVELOPMENT = env.DEVELOPMENT ?? true;
 export const MISSING_TRANSLATION_WEBHOOK = env.MISSING_TRANSLATION_WEBHOOK ||

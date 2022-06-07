@@ -1,20 +1,69 @@
 // START FILE FOR REST PROCESS
-import { DISCORD_TOKEN, REST_AUTHORIZATION_KEY, REST_PORT } from "../../configs.ts";
-import { BASE_URL, createRestManager } from "../../deps.ts";
-import { log } from "../utils/logger.ts";
+import { DISCORD_TOKEN, REST_AUTHORIZATION_KEY, REST_PORT, REST_URL, REDIS_URL, REDIS_PORT } from "../../configs.ts";
+import { BASE_URL, createRestManager, connectRedis, RestRateLimitedPath } from "../../deps.ts";
+import { logger } from "../utils/logger.ts";
+
+
+const log = logger({ name: "REST" });
 
 // CREATES THE FUNCTIONALITY FOR MANAGING THE REST REQUESTS
 const rest = createRestManager({
   token: DISCORD_TOKEN,
   secretKey: REST_AUTHORIZATION_KEY,
-  customUrl: `http://localhost:${REST_PORT}`,
+  customUrl: `http://${REST_PORT}:${REST_PORT}`,
   debug: console.log,
 });
+
+const publisher = await connectRedis({
+  hostname: REDIS_URL,
+  port: REDIS_PORT,
+})
+
+class RedisRatelimitedPaths extends Map {
+  set(key: string, value: RestRateLimitedPath) {
+    publisher.publish("setRedisRatelimitedPaths", JSON.stringify({ key, value }))
+    return super.set(key, value)
+  }
+  delete(key: string) {
+    publisher.publish("deleteRedisRatelimitedPaths", key)
+    return super.delete(key)
+  }
+  cacheSet(key: string, value: RestRateLimitedPath) {
+    return super.set(key, value)
+  }
+  cacheDelete(key: string) {
+    return super.delete(key)
+  }
+}
+
+rest.ratelimitedPaths = new RedisRatelimitedPaths()
+
+const subscriber = await connectRedis({
+  hostname: REDIS_URL,
+  port: REDIS_PORT,
+})
+
+const setSubscribtion = await subscriber.subscribe("setRedisRatelimitedPaths", "deleteRedisRatelimitedPaths");
+(async function () {
+  for await (const { channel, message } of setSubscribtion.receive()) {
+    if (channel === "setRedisRatelimitedPaths") {
+      const data = JSON.parse(message)
+      if (message === "global") rest.globallyRateLimited = true;
+      (rest.ratelimitedPaths as RedisRatelimitedPaths).cacheSet(data.key, data.value)
+      if (!rest.processingRateLimitedPaths) {
+        rest.processRateLimitedPaths(rest);
+      }
+      continue
+    }
+    if (message === "global") rest.globallyRateLimited = false;
+    (rest.ratelimitedPaths as RedisRatelimitedPaths).cacheDelete(message)
+  }
+})();
 
 // START LISTENING TO THE URL(localhost)
 const server = Deno.listen({ port: REST_PORT });
 log.info(
-  `HTTP webserver running.  Access it at:  http://localhost:${REST_PORT}/`,
+  `HTTP webserver running.  Access it at:  http://${REST_URL}:${REST_PORT}/`,
 );
 
 // Connections to the server will be yielded up as an async iterable.
@@ -33,7 +82,7 @@ async function handleRequest(conn: Deno.Conn) {
     if (
       !REST_AUTHORIZATION_KEY ||
       REST_AUTHORIZATION_KEY !==
-        requestEvent.request.headers.get("AUTHORIZATION")
+      requestEvent.request.headers.get("AUTHORIZATION")
     ) {
       return requestEvent.respondWith(
         new Response(JSON.stringify({ error: "Invalid authorization key." }), {
@@ -48,10 +97,9 @@ async function handleRequest(conn: Deno.Conn) {
       const result = await rest.runMethod(
         rest,
         requestEvent.request.method as RequestMethod,
-        `${BASE_URL}${
-          requestEvent.request.url.substring(
-            `http://localhost:${REST_PORT}`.length,
-          )
+        `${BASE_URL}${requestEvent.request.url.substring(
+          `http://${REST_URL}:${REST_PORT}`.length,
+        )
         }`,
         json,
       );
