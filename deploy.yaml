@@ -42,8 +42,6 @@ spec:
             httpGet:
               path: /healthz
               port: 8000
-      imagePullSecrets:
-        - name: harbor-regcred
 ---
 apiVersion: v1
 kind: Service
@@ -105,8 +103,6 @@ spec:
             httpGet:
               path: /healthz
               port: 8000
-      imagePullSecrets:
-        - name: harbor-regcred
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -152,8 +148,6 @@ spec:
             httpGet:
               path: /healthz
               port: 8000
-      imagePullSecrets:
-        - name: harbor-regcred
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -187,8 +181,6 @@ spec:
             limits:
               cpu: 1000m
               memory: 500Mi
-      imagePullSecrets:
-        - name: harbor-regcred
 ---
 apiVersion: v1
 kind: Service
@@ -239,8 +231,6 @@ spec:
             limits:
               cpu: 1000m
               memory: 500Mi
-      imagePullSecrets:
-        - name: harbor-regcred
 ---
 apiVersion: v1
 kind: Service
