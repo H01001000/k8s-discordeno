@@ -1,0 +1,27 @@
+apiVersion: v1
+data:
+  DEV_GUILD_ID: ""
+  DEVELOPMENT: "true"
+  DISCORD_TOKEN: "your discord token"
+  EVENT_EXCHANGE_NAME: event
+  EVENT_QUEUE_NAME: event
+  EVENT_HANDLER_SECRET_KEY: bot
+  EVENT_HANDLER_URL: bot
+  FIRST_SHARD_ID: "0"
+  GATEWAY_PROXY_URL: gateway.discordeno.svc
+  GATEWAY_SECRET_KEY: secretgatewaykey
+  LAST_SHARD_ID: "0"
+  MAX_CLUSTERS: "1"
+  MAX_SHARDS: "2"
+  MISSING_TRANSLATION_WEBHOOK: ""
+  RABBITMQ_PASSWORD: guest
+  RABBITMQ_URL: rabbitmq.discordeno.svc
+  RABBITMQ_USERNAME: guest
+  REDIS_URL: redis.discordeno.svc
+  REST_AUTHORIZATION_KEY: secretrestkey
+  REST_URL: rest.discordeno.svc
+  SHARDS_PER_CLUSTER: "1"
+kind: ConfigMap
+metadata:
+  name: env
+  namespace: discordeno
