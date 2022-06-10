@@ -4,6 +4,7 @@ import {
   bgMagenta,
   bgYellow,
   black,
+  Bot,
   green,
   Interaction,
   InteractionResponseTypes,
@@ -14,11 +15,10 @@ import {
 import { optionParser, translateOptionNames } from "../../../utils/options.ts";
 import { privateReplyToInteraction, replyToInteraction } from "../../../utils/replies.ts";
 import slashLogWebhook from "../../../utils/slashWebhook.ts";
-import { BotClient } from "../../botClient.ts";
 import { loadLanguage, serverLanguages, translate } from "../../languages/translate.ts";
 import { Command, ConvertArgumentDefinitionsToArgs } from "../../types/command.ts";
 import commands from "./mod.ts";
-import { logger, LogLevels } from "../../../utils/logger.ts";
+import { logger } from "../../../utils/logger.ts";
 
 const log = logger({ name: "CommandHandler" });
 
@@ -27,11 +27,10 @@ function logCommand(
   type: "Failure" | "Success" | "Trigger" | "Slowmode" | "Missing" | "Inhibit",
   commandName: string,
 ) {
-  const command = `[COMMAND: ${bgYellow(black(commandName || "Unknown"))} - ${
-    bgBlack(
-      ["Failure", "Slowmode", "Missing"].includes(type) ? red(type) : type === "Success" ? green(type) : white(type),
-    )
-  }]`;
+  const command = `[COMMAND: ${bgYellow(black(commandName || "Unknown"))} - ${bgBlack(
+    ["Failure", "Slowmode", "Missing"].includes(type) ? red(type) : type === "Success" ? green(type) : white(type),
+  )
+    }]`;
 
   const user = bgGreen(
     black(
@@ -46,7 +45,7 @@ function logCommand(
 }
 
 export async function executeSlashCommand(
-  bot: BotClient,
+  bot: Bot,
   interaction: Interaction,
 ) {
   log.debug(`New interaction:\n`, interaction);
@@ -54,6 +53,7 @@ export async function executeSlashCommand(
   const data = interaction.data;
   const name = data?.name as keyof typeof commands;
 
+  if (["clear", "fs", "index", "join", "leave", "now-playing", "np", "p", "pause", "play", "queue", "remove", "resume", "skip"].includes(name)) return
   // deno-lint-ignore no-explicit-any
   const command: Command<any> | undefined = commands[name];
 

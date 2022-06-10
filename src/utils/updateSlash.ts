@@ -1,7 +1,5 @@
 import { DEV_GUILD_ID } from "../../configs.ts";
 import { ApplicationCommandOption, ApplicationCommandTypes, Bot } from "../../deps.ts";
-import { BotClient } from "../bot/botClient.ts";
-import { updateCommandVersion } from "../bot/database/commandVersion.ts";
 import commands from "../bot/events/interactions/mod.ts";
 import { serverLanguages, translate } from "../bot/languages/translate.ts";
 import { ArgumentDefinition } from "../bot/types/command.ts";
@@ -74,7 +72,7 @@ function createOptions(
       // @ts-ignore fix this
       options: option.options
         ? // @ts-ignore fix this
-          createOptions(bot, guildId, option.options)
+        createOptions(bot, guildId, option.options)
         : undefined,
     } as ApplicationCommandOption);
   }
@@ -99,10 +97,8 @@ export async function updateGlobalCommands(bot: Bot) {
   );
 }
 
-export async function updateGuildCommands(bot: BotClient, guildId: bigint) {
+export async function updateGuildCommands(bot: Bot, guildId: bigint) {
   if (guildId === DEV_GUILD_ID) return await updateDevCommands(bot);
-
-  await updateCommandVersion(bot, guildId);
 
   Object.entries(commands)
     // ONLY GUILD COMMANDS

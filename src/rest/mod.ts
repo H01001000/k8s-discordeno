@@ -1,6 +1,6 @@
 // START FILE FOR REST PROCESS
-import { DISCORD_TOKEN, REST_AUTHORIZATION_KEY, REST_PORT, REST_URL, REDIS_URL, REDIS_PORT } from "../../configs.ts";
-import { BASE_URL, createRestManager, connectRedis, RestRateLimitedPath } from "../../deps.ts";
+import { DISCORD_TOKEN, REST_AUTHORIZATION_KEY, REST_URL, REDIS_URL } from "../../configs.ts";
+import { BASE_URL, createRestManager, connectRedis, RestRateLimitedPath, serve } from "../../deps.ts";
 import { logger } from "../utils/logger.ts";
 
 
@@ -10,13 +10,12 @@ const log = logger({ name: "REST" });
 const rest = createRestManager({
   token: DISCORD_TOKEN,
   secretKey: REST_AUTHORIZATION_KEY,
-  customUrl: `http://${REST_PORT}:${REST_PORT}`,
+  customUrl: `http://${REST_URL}:8000`,
   debug: console.log,
 });
 
 const publisher = await connectRedis({
   hostname: REDIS_URL,
-  port: REDIS_PORT,
 })
 
 class RedisRatelimitedPaths extends Map {
@@ -40,7 +39,6 @@ rest.ratelimitedPaths = new RedisRatelimitedPaths()
 
 const subscriber = await connectRedis({
   hostname: REDIS_URL,
-  port: REDIS_PORT,
 })
 
 const setSubscribtion = await subscriber.subscribe("setRedisRatelimitedPaths", "deleteRedisRatelimitedPaths");
@@ -61,70 +59,57 @@ const setSubscribtion = await subscriber.subscribe("setRedisRatelimitedPaths", "
 })();
 
 // START LISTENING TO THE URL(localhost)
-const server = Deno.listen({ port: REST_PORT });
-log.info(
-  `HTTP webserver running.  Access it at:  http://${REST_URL}:${REST_PORT}/`,
-);
+serve(handleRequest, {
+  port: 8000, onListen: () => {
+    log.info(
+      `HTTP webserver running.  Access it at:  http://${REST_URL}:8000/`,
+    );
+  }
+});
 
-// Connections to the server will be yielded up as an async iterable.
-for await (const conn of server) {
-  // In order to not be blocking, we need to handle each connection individually
-  // in its own async function.
-  handleRequest(conn);
-}
+async function handleRequest(req: Request) {
+  const path = new URL(req.url).pathname
+  if (path === '/healthz') {
+    return new Response(undefined, { status: 200 })
+  }
 
-async function handleRequest(conn: Deno.Conn) {
-  // This "upgrades" a network connection into an HTTP connection.
-  const httpConn = Deno.serveHttp(conn);
-  // Each request sent over the HTTP connection will be yielded as an async
-  // iterator from the HTTP connection.
-  for await (const requestEvent of httpConn) {
-    if (
-      !REST_AUTHORIZATION_KEY ||
-      REST_AUTHORIZATION_KEY !==
-      requestEvent.request.headers.get("AUTHORIZATION")
-    ) {
-      return requestEvent.respondWith(
-        new Response(JSON.stringify({ error: "Invalid authorization key." }), {
-          status: 401,
-        }),
-      );
+  if (
+    !REST_AUTHORIZATION_KEY ||
+    REST_AUTHORIZATION_KEY !==
+    req.headers.get("AUTHORIZATION")
+  ) {
+    return new Response(JSON.stringify({ error: "Invalid authorization key." }), {
+      status: 401,
+    })
+  }
+
+  const json = req.body ? (await req.json()) : undefined;
+
+  try {
+    const result = await rest.runMethod(
+      rest,
+      req.method as RequestMethod,
+      `${BASE_URL}${req.url.substring(
+        `http://${REST_URL}:8000`.length,
+      )
+      }`,
+      json,
+    );
+
+    if (result) {
+      return new Response(JSON.stringify(result), {
+        status: 200,
+      })
+    } else {
+      return new Response(undefined, {
+        status: 204,
+      })
     }
-
-    const json = requestEvent.request.body ? (await requestEvent.request.json()) : undefined;
-
-    try {
-      const result = await rest.runMethod(
-        rest,
-        requestEvent.request.method as RequestMethod,
-        `${BASE_URL}${requestEvent.request.url.substring(
-          `http://${REST_URL}:${REST_PORT}`.length,
-        )
-        }`,
-        json,
-      );
-
-      if (result) {
-        requestEvent.respondWith(
-          new Response(JSON.stringify(result), {
-            status: 200,
-          }),
-        );
-      } else {
-        requestEvent.respondWith(
-          new Response(undefined, {
-            status: 204,
-          }),
-        );
-      }
-    } catch (error) {
-      log.error(error);
-      requestEvent.respondWith(
-        new Response(JSON.stringify(error), {
-          status: error.code,
-        }),
-      );
-    }
+  } catch (error) {
+    log.error(error);
+    return new Response(JSON.stringify(error), {
+      status: error.code,
+    })
   }
 }
 

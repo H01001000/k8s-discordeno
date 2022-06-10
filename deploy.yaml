@@ -1,0 +1,313 @@
+apiVersion: v1
+data:
+  DEV_GUILD_ID: ""
+  DEVELOPMENT: "true"
+  DISCORD_TOKEN: your discord token
+  EVENT_EXCHANGE_NAME: event
+  EVENT_QUEUE_NAME: event
+  EVENT_HANDLER_SECRET_KEY: bot
+  EVENT_HANDLER_URL: bot
+  FIRST_SHARD_ID: "0"
+  GATEWAY_PROXY_URL: gateway.discordeno.svc
+  GATEWAY_SECRET_KEY: secretgatewaykey
+  LAST_SHARD_ID: "0"
+  MAX_CLUSTERS: "1"
+  MAX_SHARDS: "2"
+  MISSING_TRANSLATION_WEBHOOK: ""
+  RABBITMQ_PASSWORD: guest
+  RABBITMQ_URL: rabbitmq.discordeno.svc
+  RABBITMQ_USERNAME: guest
+  REDIS_URL: redis.discordeno.svc
+  REST_AUTHORIZATION_KEY: secretrestkey
+  REST_URL: rest.discordeno.svc
+  SHARDS_PER_CLUSTER: "1"
+kind: ConfigMap
+metadata:
+  name: env
+  namespace: discordeno
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rest
+  namespace: discordeno
+  labels:
+    app: rest
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rest
+  template:
+    metadata:
+      labels:
+        app: rest
+    spec:
+      containers:
+        - name: rest
+          image: harbor.jh0project.com/discordeno/rest:0.0.16
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: env
+          resources:
+            requests:
+              cpu: 50m
+              memory: 500Mi
+            limits:
+              cpu: 1000m
+              memory: 500Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+      imagePullSecrets:
+        - name: harbor-regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rest
+  name: rest
+  namespace: discordeno
+spec:
+  ports:
+    - port: 8000
+      name: http
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app: rest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot
+  namespace: discordeno
+  labels:
+    app: bot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bot
+  template:
+    metadata:
+      labels:
+        app: bot
+    spec:
+      containers:
+        - name: bot
+          image: harbor.jh0project.com/discordeno/bot:0.0.65
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: env
+          resources:
+            requests:
+              cpu: 50m
+              memory: 500Mi
+            limits:
+              cpu: 1000m
+              memory: 500Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+      imagePullSecrets:
+        - name: harbor-regcred
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: discordeno
+  labels:
+    app: gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: harbor.jh0project.com/discordeno/gateway:0.0.18
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: env
+          resources:
+            requests:
+              cpu: 50m
+              memory: 500Mi
+            limits:
+              cpu: 1000m
+              memory: 500Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+      imagePullSecrets:
+        - name: harbor-regcred
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: discordeno
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.0.0-alpine
+          ports:
+            - containerPort: 6379
+          envFrom:
+            - configMapRef:
+                name: env
+          resources:
+            requests:
+              cpu: 50m
+              memory: 500Mi
+            limits:
+              cpu: 1000m
+              memory: 500Mi
+      imagePullSecrets:
+        - name: harbor-regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis
+  name: redis
+  namespace: discordeno
+spec:
+  ports:
+    - port: 6379
+      name: redis
+      protocol: TCP
+      targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: discordeno
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: harbor.jh0project.com/discordeno/rabbitmq:0.0.1
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          envFrom:
+            - configMapRef:
+                name: env
+          resources:
+            requests:
+              cpu: 50m
+              memory: 500Mi
+            limits:
+              cpu: 1000m
+              memory: 500Mi
+      imagePullSecrets:
+        - name: harbor-regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rabbitmq
+  name: rabbitmq
+  namespace: discordeno
+spec:
+  ports:
+    - port: 5672
+      name: amqp
+      protocol: TCP
+      targetPort: 5672
+    - port: 15672
+      name: http
+      protocol: TCP
+      targetPort: 15672
+  selector:
+    app: rabbitmq
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: rabbitmq-gateway
+  namespace: discordeno
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - istio-system/private-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /discordeno/rabbitmq/
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: rabbitmq.discordeno.svc.cluster.local
+            port:
+              number: 15672

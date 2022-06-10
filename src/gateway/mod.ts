@@ -1,5 +1,5 @@
-import { Collection, createGatewayManager, createRestManager, endpoints } from "../../deps.ts";
-import { DISCORD_TOKEN, REST_AUTHORIZATION_KEY, REST_PORT, REST_URL } from "../../configs.ts";
+import { Collection, createGatewayManager, createRestManager, endpoints, serve } from "../../deps.ts";
+import { DISCORD_TOKEN, REST_AUTHORIZATION_KEY, REST_URL } from "../../configs.ts";
 import { logger } from "../utils/logger.ts";
 
 const log = logger({ name: "Gateway" });
@@ -8,18 +8,23 @@ const log = logger({ name: "Gateway" });
 const rest = createRestManager({
   token: DISCORD_TOKEN,
   secretKey: REST_AUTHORIZATION_KEY,
-  customUrl: `http://${REST_URL}:${REST_PORT}`,
+  customUrl: `http://${REST_URL}:8000`,
 });
 
 const gateway = createGatewayManager({
-  // THE AUTHORIZATION WE WILL USE ON OUR EVENT HANDLER PROCESS
-  token: DISCORD_TOKEN,
-  intents: ["GuildMessages", "Guilds"],
   // THIS WILL BASICALLY BE YOUR HANDLER FOR YOUR EVENTS.
-  handleDiscordPayload: async (_, data, shardId) => { },
+  handleDiscordPayload: async (..._args) => { },
 });
 
-const workers = new Collection<number, Worker>();
+const workers = new Collection<number, Worker>(); let ready = false
+
+serve((req) => {
+  const path = new URL(req.url).pathname
+  if (path === '/healthz') {
+    return ready ? new Response(undefined, { status: 200 }) : new Response(undefined, { status: 503 })
+  }
+  return new Response(undefined, { status: 404 })
+}, { port: 8000 })
 
 async function startGateway() {
   // CALL THE REST PROCESS TO GET GATEWAY DATA
@@ -49,7 +54,7 @@ async function startGateway() {
 
   function startWorker(
     workerId: number,
-    bucketId: number,
+    _bucketId: number,
     firstShardId: number,
     lastShardId: number,
   ) {
@@ -116,6 +121,7 @@ async function startGateway() {
         // THIS IS FINAL WORKER
         worker.onmessage = function (message) {
           const data = JSON.parse(message.data);
+          if (data.type === "ALL_SHARDS_READY") ready = true
           if (data.type === "RESHARDED") {
             // THERE IS NO NEXT WORKER SO TELL ALL WORKERS TO CLOSE OLD GATEWAYS
             workers.forEach((workerx) => {
@@ -138,7 +144,7 @@ async function startGateway() {
 startGateway();
 
 setInterval(async () => {
-  console.log("GW DEBUG", "[Resharding] Checking if resharding is needed.");
+  log.debug("GW DEBUG", "[Resharding] Checking if resharding is needed.");
 
   const results = await rest.runMethod(rest, "get", endpoints.GATEWAY_BOT())
     .then((res) => ({

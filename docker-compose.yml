@@ -2,8 +2,6 @@ version: '3.8'
 services:
   redis:
     image: redis:7.0.0-alpine
-    ports:
-      - "6379:6379"
     env_file:
       - .env
   rest:
@@ -46,6 +44,3 @@ services:
     build:
       context: .
       target: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"

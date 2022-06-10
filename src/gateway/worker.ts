@@ -2,13 +2,11 @@
 import {
   DISCORD_TOKEN,
   EVENT_EXCHANGE_NAME,
-  EVENT_HANDLER_SECRET_KEY,
   RABBITMQ_PASSWORD,
-  RABBITMQ_PORT,
   RABBITMQ_URL,
   RABBITMQ_USERNAME,
 } from "../../configs.ts";
-import { Collection, connectAmqp, createGatewayManager, DiscordReady, GatewayManager, GetGatewayBot } from "../../deps.ts";
+import { Collection, connectAmqp, createGatewayManager, DiscordReady, GatewayManager, GatewayOpcodes, GetGatewayBot } from "../../deps.ts";
 import { logger } from "../utils/logger.ts";
 
 let gateway: GatewayManager;
@@ -26,6 +24,24 @@ function hashCode(value: string): number {
   }
   return hash;
 };
+
+const tryPublish = async (json: any, hash: number) => {
+  try {
+    await channel.publish(
+      { exchange: EVENT_EXCHANGE_NAME },
+      {
+        contentType: "application/json", headers: {
+          "x-deduplication-header": hash
+        }
+      },
+      json,
+    );
+  } catch {
+    setTimeout(() => {
+      tryPublish(json, hash)
+    }, 1000);
+  }
+}
 
 function spawnGateway(shardId: number, options: Partial<GatewayManager>) {
   const log = logger({
@@ -49,9 +65,24 @@ function spawnGateway(shardId: number, options: Partial<GatewayManager>) {
     // SET LAST SHARD ID
     lastShardId: options.lastShardId ?? shardId,
     // THE AUTHORIZATION WE WILL USE ON OUR EVENT HANDLER PROCESS
-    secretKey: EVENT_HANDLER_SECRET_KEY,
     token: DISCORD_TOKEN,
-    intents: ["GuildMessages", "Guilds", "GuildMembers"],
+    intents: ["Guilds",
+      "GuildMembers",
+      "GuildBans",
+      "GuildEmojis",
+      "GuildIntegrations",
+      "GuildWebhooks",
+      "GuildInvites",
+      "GuildVoiceStates",
+      "GuildPresences",
+      "GuildMessages",
+      "GuildMessageReactions",
+      "GuildMessageTyping",
+      "DirectMessages",
+      "DirectMessageReactions",
+      "DirectMessageTyping",
+      "MessageContent",
+      "GuildScheduledEvents"],
     handleDiscordPayload: async function (_, data, shardId) {
       // TRIGGER RAW EVENT
       if (!data.t) return;
@@ -60,6 +91,19 @@ function spawnGateway(shardId: number, options: Partial<GatewayManager>) {
         ["GUILD_CREATE", "GUILD_DELETE", "GUILD_UPDATE"].includes(data.t)
         ? (data.d as any)?.id
         : (data.d as any)?.guild_id) ?? "000000000000000000";
+
+
+      if (data.t === "GUILD_CREATE") {
+        gateway.sendShardMessage(gateway, shardId, {
+          op: GatewayOpcodes.RequestGuildMembers,
+          d: {
+            guild_id: id.toString(),
+            query: "",
+            limit: 0,
+            presences: true,
+          },
+        })
+      }
 
       // IF FINAL SHARD BECAME READY TRIGGER NEXT WORKER
       if (data.t === "READY") {
@@ -75,6 +119,7 @@ function spawnGateway(shardId: number, options: Partial<GatewayManager>) {
             }),
           );
         }
+
       }
 
       // DONT SEND THESE EVENTS USELESS TO BOT
@@ -83,19 +128,7 @@ function spawnGateway(shardId: number, options: Partial<GatewayManager>) {
       // Debug mode only
       log.debug(`New Event:\n`, data);
 
-      const json = JSON.stringify({
-        shardId,
-        data
-      })
-      await channel.publish(
-        { exchange: EVENT_EXCHANGE_NAME },
-        {
-          contentType: "application/json", headers: {
-            "x-deduplication-header": hashCode(json)
-          }
-        },
-        new TextEncoder().encode(json),
-      );
+      tryPublish(new TextEncoder().encode(JSON.stringify({ shardId, data })), hashCode(JSON.stringify(data.d)))
     },
   });
 
@@ -311,7 +344,7 @@ self.onmessage = async function (message: MessageEvent<string>) {
 
 };
 
-const connection = await connectAmqp(`amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_URL}:${RABBITMQ_PORT}`);
+const connection = await connectAmqp(`amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_URL}`);
 const channel = await connection.openChannel();
 await channel.declareExchange({
   exchange: EVENT_EXCHANGE_NAME,
@@ -319,7 +352,7 @@ await channel.declareExchange({
   type: "x-message-deduplication",
   arguments: {
     "x-cache-size": 1000,
-    "x-cache-ttl": 10000
+    "x-cache-ttl": 500
   },
 
 })

@@ -7,9 +7,9 @@ import {
   PermissionStrings,
   Role,
   User,
+  Bot
 } from "../../../deps.ts";
 import { PermissionLevelHandlers } from "../../utils/permLevels.ts";
-import { BotClient } from "../botClient.ts";
 import english from "../languages/english.ts";
 import { translationKeys } from "../languages/translate.ts";
 
@@ -188,76 +188,76 @@ export type ConvertArgumentDefinitionsToArgs<
   UnionToIntersection<
     {
       [P in keyof T]: T[P] extends StringOptionalArgumentDefinition<infer N> // STRING
-        ? {
-          [_ in getName<N>]?: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
-          T[P]["choices"][number]["value"]
-            : string;
-        }
-        : T[P] extends StringArgumentDefinition<infer N> ? {
-          [_ in getName<N>]: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
-          T[P]["choices"][number]["value"]
-            : string;
-        }
-        : // INTEGER
-        T[P] extends IntegerOptionalArgumentDefinition<infer N> ? {
-          [_ in getName<N>]?: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
-          T[P]["choices"][number]["value"]
-            : number;
-        }
-        : T[P] extends IntegerArgumentDefinition<infer N> ? {
-          [_ in getName<N>]: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
-          T[P]["choices"][number]["value"]
-            : number;
-        }
-        : // BOOLEAN
-        T[P] extends BooleanOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: boolean }
-        : T[P] extends BooleanArgumentDefinition<infer N> ? { [_ in getName<N>]: boolean }
-        : // USER
-        T[P] extends UserOptionalArgumentDefinition<infer N> ? {
-          [_ in getName<N>]?: {
-            user: User;
-            member: Member;
-          };
-        }
-        : T[P] extends UserArgumentDefinition<infer N> ? {
-          [_ in getName<N>]: {
-            user: User;
-            member: Member;
-          };
-        }
-        : // CHANNEL
-        T[P] extends ChannelOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: Channel }
-        : T[P] extends ChannelArgumentDefinition<infer N> ? { [_ in getName<N>]: Channel }
-        : // ROLE
-        T[P] extends RoleOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: Role }
-        : T[P] extends RoleArgumentDefinition<infer N> ? { [_ in getName<N>]: Role }
-        : // MENTIONABLE
-        T[P] extends MentionableOptionalArgumentDefinition<infer N> ? {
-          [_ in getName<N>]?: Role | {
-            user: User;
-            member: Member;
-          };
-        }
-        : T[P] extends MentionableArgumentDefinition<infer N> ? {
-          [_ in getName<N>]: Role | {
-            user: User;
-            member: Member;
-          };
-        }
-        : // SUBCOMMAND
-        T[P] extends SubcommandArgumentDefinition<infer N> ? {
-          [_ in getName<N>]?: T[P]["options"] extends readonly ArgumentDefinition[] ? // @ts-ignore ignore this for a bit
-          ConvertArgumentDefinitionsToArgs<T[P]["options"]>
-            : // deno-lint-ignore ban-types
-            {};
-        }
-        : // SUBCOMMAND GROUP
-        T[P] extends SubcommandGroupArgumentDefinition<infer N> ? {
-          [_ in getName<N>]?: ConvertArgumentDefinitionsToArgs<
-            T[P]["options"]
-          >;
-        }
-        : never;
+      ? {
+        [_ in getName<N>]?: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
+        T[P]["choices"][number]["value"]
+        : string;
+      }
+      : T[P] extends StringArgumentDefinition<infer N> ? {
+        [_ in getName<N>]: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
+        T[P]["choices"][number]["value"]
+        : string;
+      }
+      : // INTEGER
+      T[P] extends IntegerOptionalArgumentDefinition<infer N> ? {
+        [_ in getName<N>]?: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
+        T[P]["choices"][number]["value"]
+        : number;
+      }
+      : T[P] extends IntegerArgumentDefinition<infer N> ? {
+        [_ in getName<N>]: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
+        T[P]["choices"][number]["value"]
+        : number;
+      }
+      : // BOOLEAN
+      T[P] extends BooleanOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: boolean }
+      : T[P] extends BooleanArgumentDefinition<infer N> ? { [_ in getName<N>]: boolean }
+      : // USER
+      T[P] extends UserOptionalArgumentDefinition<infer N> ? {
+        [_ in getName<N>]?: {
+          user: User;
+          member: Member;
+        };
+      }
+      : T[P] extends UserArgumentDefinition<infer N> ? {
+        [_ in getName<N>]: {
+          user: User;
+          member: Member;
+        };
+      }
+      : // CHANNEL
+      T[P] extends ChannelOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: Channel }
+      : T[P] extends ChannelArgumentDefinition<infer N> ? { [_ in getName<N>]: Channel }
+      : // ROLE
+      T[P] extends RoleOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: Role }
+      : T[P] extends RoleArgumentDefinition<infer N> ? { [_ in getName<N>]: Role }
+      : // MENTIONABLE
+      T[P] extends MentionableOptionalArgumentDefinition<infer N> ? {
+        [_ in getName<N>]?: Role | {
+          user: User;
+          member: Member;
+        };
+      }
+      : T[P] extends MentionableArgumentDefinition<infer N> ? {
+        [_ in getName<N>]: Role | {
+          user: User;
+          member: Member;
+        };
+      }
+      : // SUBCOMMAND
+      T[P] extends SubcommandArgumentDefinition<infer N> ? {
+        [_ in getName<N>]?: T[P]["options"] extends readonly ArgumentDefinition[] ? // @ts-ignore ignore this for a bit
+        ConvertArgumentDefinitionsToArgs<T[P]["options"]>
+        : // deno-lint-ignore ban-types
+        {};
+      }
+      : // SUBCOMMAND GROUP
+      T[P] extends SubcommandGroupArgumentDefinition<infer N> ? {
+        [_ in getName<N>]?: ConvertArgumentDefinitionsToArgs<
+          T[P]["options"]
+        >;
+      }
+      : never;
     }[number]
   >
 >;
@@ -274,7 +274,7 @@ export interface Command<T extends readonly ArgumentDefinition[]> {
   // options?: ApplicationCommandOption[];
   options?: T;
   execute: (
-    bot: BotClient,
+    bot: Bot,
     data: Interaction,
     args: ConvertArgumentDefinitionsToArgs<T>,
   ) => unknown;
@@ -306,11 +306,11 @@ export interface Command<T extends readonly ArgumentDefinition[]> {
   acknowledge?: boolean;
 
   permissionLevels?:
-    | (keyof typeof PermissionLevelHandlers)[]
-    | ((
-      data: Interaction,
-      command: Command<T>,
-    ) => boolean | Promise<boolean>);
+  | (keyof typeof PermissionLevelHandlers)[]
+  | ((
+    data: Interaction,
+    command: Command<T>,
+  ) => boolean | Promise<boolean>);
   botServerPermissions?: PermissionStrings[];
   botChannelPermissions?: PermissionStrings[];
   userServerPermissions?: PermissionStrings[];
