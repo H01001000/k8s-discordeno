@@ -4,23 +4,23 @@ import { dotEnvConfig, GatewayIntents } from "./deps.ts";
 dotEnvConfig({ export: true })
 
 // TODO: REMOVE THESE! THEY ARE BAD FOR YOU! DUH! Seriously, only keep the ones your bot needs!
-export const GATEWAY_INTENTS: (keyof typeof GatewayIntents)[] = [
-  "DirectMessageReactions",
-  "DirectMessageTyping",
-  "DirectMessages",
+export const GATEWAY_INTENTS: (keyof typeof GatewayIntents)[] = ["Guilds",
+  "GuildMembers",
   "GuildBans",
   "GuildEmojis",
   "GuildIntegrations",
+  "GuildWebhooks",
   "GuildInvites",
-  "GuildMembers",
+  "GuildVoiceStates",
+  "GuildPresences",
+  "GuildMessages",
   "GuildMessageReactions",
   "GuildMessageTyping",
-  "GuildMessages",
-  "GuildPresences",
-  "GuildVoiceStates",
-  "GuildWebhooks",
-  "Guilds",
-];
+  "DirectMessages",
+  "DirectMessageReactions",
+  "DirectMessageTyping",
+  "MessageContent",
+  "GuildScheduledEvents"];
 
 if (!Deno.env.get("DISCORD_TOKEN")) {
   throw new Error("DUDE! You did not provide a Discord token!");

@@ -2,6 +2,7 @@
 import {
   DISCORD_TOKEN,
   EVENT_EXCHANGE_NAME,
+  GATEWAY_INTENTS,
   RABBITMQ_PASSWORD,
   RABBITMQ_URL,
   RABBITMQ_USERNAME,
@@ -66,23 +67,7 @@ function spawnGateway(shardId: number, options: Partial<GatewayManager>) {
     lastShardId: options.lastShardId ?? shardId,
     // THE AUTHORIZATION WE WILL USE ON OUR EVENT HANDLER PROCESS
     token: DISCORD_TOKEN,
-    intents: ["Guilds",
-      "GuildMembers",
-      "GuildBans",
-      "GuildEmojis",
-      "GuildIntegrations",
-      "GuildWebhooks",
-      "GuildInvites",
-      "GuildVoiceStates",
-      "GuildPresences",
-      "GuildMessages",
-      "GuildMessageReactions",
-      "GuildMessageTyping",
-      "DirectMessages",
-      "DirectMessageReactions",
-      "DirectMessageTyping",
-      "MessageContent",
-      "GuildScheduledEvents"],
+    intents: GATEWAY_INTENTS,
     handleDiscordPayload: async function (_, data, shardId) {
       // TRIGGER RAW EVENT
       if (!data.t) return;
