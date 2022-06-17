@@ -14,7 +14,7 @@ import {
 import { connectAmqp, createBot, createRestManager, DiscordGatewayPayload, serve } from "../../deps.ts";
 import logger from "../utils/logger.ts";
 import { updateDevCommands as _updateDevCommands } from "../utils/updateSlash.ts";
-import enableCachePlugin, { dispatchRequirements, enableCacheSweepers } from "./cache/mod.ts";
+import enableCachePlugin, { dispatchRequirements } from "./cache/mod.ts";
 import { setGuildCommands as _setGuildCommands } from "./events/interactions/slash/setGuildCommands.ts";
 import { setupEventHandlers } from "./events/mod.ts";
 import { patchBot } from "./patch.ts";
@@ -44,8 +44,6 @@ export const bot = enableCachePlugin(
     })
   )
 );
-
-enableCacheSweepers(bot);
 
 setupEventHandlers();
 // customizeBotInternals(bot);
