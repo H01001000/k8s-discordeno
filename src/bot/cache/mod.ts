@@ -199,9 +199,7 @@ export function enableCachePlugin<B extends Bot = Bot>(rawBot: B): BotWithCache<
     // Cache the result
     if (result) {
       bot.guilds.get(result.guildId).then((guild) => {
-        guild?.voiceStates.get(result.userId).then((oldResult) => {
-          guild?.voiceStates?.set(result.userId, mergeObject(oldResult, result))
-        })
+        guild?.voiceStates?.set(result.userId, result)
       });
     }
     // Return the result
