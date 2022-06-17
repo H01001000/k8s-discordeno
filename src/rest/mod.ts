@@ -20,6 +20,7 @@ const publisher = await connectRedis({
 
 class RedisRatelimitedPaths extends Map {
   set(key: string, value: RestRateLimitedPath) {
+    console.log(key, value);
     publisher.publish("setRedisRatelimitedPaths", JSON.stringify({ key, value }))
     return super.set(key, value)
   }
