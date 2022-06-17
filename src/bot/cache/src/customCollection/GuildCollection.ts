@@ -13,7 +13,7 @@ export interface CachedGuild extends Guild {
 export class GuildCollection extends RedisCollection<CachedGuild> {
   async get(key: bigint) {
     const guild = await super.get(key)
-    if (!guild) return
+    if (!guild) return guild
     guild.roles = new RedisCollection(`${guild.id}-roles`)
     guild.emojis = new RedisCollection(`${guild.id}-emojis`)
     guild.channels = new RedisCollection(`${guild.id}-channels`)
