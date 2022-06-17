@@ -111,7 +111,6 @@ export function enableCachePlugin<B extends Bot = Bot>(rawBot: B): BotWithCache<
           })
           return result
         }
-        console.log("result channel", result.id, result);
         bot.channels.set(result.id, mergedResult);
         if (result.guildId) {
           new RedisCollection(`${result.guildId}-channels`).set(result.id, result)
