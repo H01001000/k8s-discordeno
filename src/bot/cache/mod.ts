@@ -4,9 +4,8 @@ import { addCacheCollections, BotWithCache } from "./src/addCacheCollections.ts"
 import { setupCacheEdits } from "./src/setupCacheEdits.ts";
 import { RedisCollection } from "./src/RedisCollection.ts";
 
-// deno-lint-ignore no-explicit-any
-const mergeObject = (oldObject: any, newObject: any) => {
-  if (!oldObject) return newObject
+const mergeObject = <T extends Record<string, unknown> | undefined, V extends Record<string, unknown>>(oldObject: T, newObject: V) => {
+  if (!oldObject) return newObject as V
   Object.keys(oldObject).forEach((key) => {
     if (newObject[key] === undefined || newObject[key] === 'undefined') {
       delete newObject[key];
@@ -42,7 +41,9 @@ export function enableCachePlugin<B extends Bot = Bot>(rawBot: B): BotWithCache<
     // Cache the result
     if (result) {
       bot.guilds.get(result.id).then((oldResult) => {
-        bot.guilds.set(result.id, mergeObject(oldResult, result));
+        //@ts-expect-error: typescript thinks interface is not record<string, unknow>
+        const mergedResult = mergeObject(oldResult, result);
+        bot.guilds.set(result.id, mergedResult);
       })
 
       const channels = payload.guild.channels || [];
