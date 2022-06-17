@@ -48,7 +48,7 @@ export function enableCachePlugin<B extends Bot = Bot>(rawBot: B): BotWithCache<
 
       const channels = payload.guild.channels || [];
       channels.forEach((channel) => {
-        result.channels.set(bot.transformers.snowflake(channel.id), bot.transformers.channel(bot, { channel, guildId: result.id }));
+        bot.transformers.channel(bot, { channel, guildId: result.id });
       });
 
       const emojis = payload.guild.emojis || [];
@@ -113,6 +113,9 @@ export function enableCachePlugin<B extends Bot = Bot>(rawBot: B): BotWithCache<
         }
         console.log("result channel", result.id, result);
         bot.channels.set(result.id, mergedResult);
+        if (result.guildId) {
+          new RedisCollection(`${result.guildId}-channels`).set(result.id, result)
+        }
       })
     }
     // Return the result
