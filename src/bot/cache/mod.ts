@@ -1,8 +1,9 @@
-import { Bot, DiscordChannel, DiscordGuildEmojisUpdate, DiscordUser, endpoints } from "./deps.ts";
+import { Bot, DiscordChannel, DiscordGuild, DiscordGuildEmojisUpdate, DiscordMember, DiscordUser, endpoints } from "./deps.ts";
 import { setupCacheRemovals } from "./src/setupCacheRemovals.ts";
 import { addCacheCollections, BotWithCache } from "./src/addCacheCollections.ts";
 import { setupCacheEdits } from "./src/setupCacheEdits.ts";
 import { RedisCollection } from "./src/RedisCollection.ts";
+import { redis } from "../redis.ts";
 
 const mergeObject = <T extends Record<string, unknown> | undefined, V extends Record<string, unknown>>(oldObject: T, newObject: V) => {
   if (!oldObject) return newObject as V
@@ -208,6 +209,32 @@ export function enableCachePlugin<B extends Bot = Bot>(rawBot: B): BotWithCache<
 
   setupCacheRemovals(bot);
   setupCacheEdits(bot);
+
+  setInterval(async () => {
+    if (await redis.hlen("guilds") === 0) {
+      const guilds = await bot.rest.runMethod(bot.rest, "get", endpoints.USER_BOT() + "/guilds") as DiscordGuild[]
+      for await (const guild of guilds) {
+        bot.rest.runMethod(bot.rest, "get", endpoints.GUILDS_BASE(BigInt(guild.id)) + "?with_counts=true").then((payload: DiscordGuild) => {
+          bot.transformers.guild(bot, {
+            guild: payload, shardId: 0
+          })
+        })
+
+        bot.rest.runMethod(bot.rest, "get", endpoints.GUILD_CHANNELS(BigInt(guild.id))).then((payloads: DiscordChannel[]) => {
+          payloads.forEach((payload) => {
+            bot.transformers.channel(bot, { channel: payload })
+          });
+        })
+
+        bot.rest.runMethod(bot.rest, "get", endpoints.GUILD_MEMBERS(BigInt(guild.id)) + "?limit=1000").then((payloads: DiscordMember[]) => {
+          payloads.forEach((payload) => {
+            bot.transformers.member(bot, payload, BigInt(guild.id), BigInt(payload.user?.id as string))
+            bot.transformers.user(bot, payload.user as DiscordUser)
+          });
+        })
+      }
+    }
+  }, 5000)
 
   // PLUGINS MUST RETURN THE BOT
   return bot;
