@@ -1,7 +1,7 @@
 import { InteractionTypes, MessageComponentTypes } from "../../../../deps.ts";
 import { bot } from "../../mod.ts";
 import { executeSlashCommand } from "../interactions/executeSlashCommand.ts";
-import { logger, LogLevels } from "../../../utils/logger.ts";
+import { logger } from "../../../utils/logger.ts";
 
 const log = logger({ name: "InteractionHandler" });
 
@@ -21,7 +21,7 @@ export function setInteractionCreateEvent() {
       // THE INTERACTION CAME FROM A BUTTON
       if (
         interaction.data.componentType ===
-          MessageComponentTypes.Button
+        MessageComponentTypes.Button
       ) {
         log.debug("Button Event!");
         // processButtonCollectors(bot, interaction)
