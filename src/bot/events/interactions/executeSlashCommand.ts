@@ -15,7 +15,6 @@ import {
 import { optionParser, translateOptionNames } from "../../../utils/options.ts";
 import { privateReplyToInteraction, replyToInteraction } from "../../../utils/replies.ts";
 import slashLogWebhook from "../../../utils/slashWebhook.ts";
-import { loadLanguage, serverLanguages, translate } from "../../languages/translate.ts";
 import { Command, ConvertArgumentDefinitionsToArgs } from "../../types/command.ts";
 import commands from "./mod.ts";
 import { logger } from "../../../utils/logger.ts";
@@ -66,11 +65,7 @@ export async function executeSlashCommand(
       {
         type: InteractionResponseTypes.ChannelMessageWithSource,
         data: {
-          content: translate(
-            bot,
-            interaction.guildId!,
-            "EXECUTE_COMMAND_NOT_FOUND",
-          ),
+          content: "Something went wrong. I was not able to find this command.",
         },
       },
     )
@@ -82,14 +77,7 @@ export async function executeSlashCommand(
     logCommand(interaction, "Trigger", name);
 
     // Load the language for this guild
-    if (interaction.guildId && !serverLanguages.has(interaction.guildId)) {
-      // TODO: Check if this is deferrable
-      await replyToInteraction(bot, interaction, {
-        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-      });
-      loadLanguage(interaction.guildId);
-    } // Load the language for this guild
-    else if (command.acknowledge) {
+    if (command.acknowledge) {
       // Acknowledge the command
       await replyToInteraction(bot, interaction, {
         type: InteractionResponseTypes.DeferredChannelMessageWithSource,
@@ -120,7 +108,7 @@ export async function executeSlashCommand(
     logCommand(interaction, "Failure", name);
     await slashLogWebhook(bot, interaction, name).catch(log.error);
     return await privateReplyToInteraction(bot, interaction, {
-      content: translate(bot, interaction.id, "EXECUTE_COMMAND_ERROR"),
+      content: "Something went wrong. The command execution has thrown an error.",
     }).catch(log.error);
   }
 }

@@ -4,24 +4,24 @@ import { updateGlobalCommands, updateGuildCommands } from "../../../../../utils/
 import { createCommand } from "../createCommand.ts";
 
 const command = createCommand({
-  name: "UPDATE_NAME",
-  description: "UPDATE_DESCRIPTION",
+  name: "update",
+  description: "🎉 Update the commands for the bot.",
   dev: true,
   acknowledge: true,
   options: [
     {
-      name: "UPDATE_GLOBAL_NAME",
-      description: "UPDATE_GLOBAL_DESCRIPTION",
+      name: "global",
+      description: "Update the global commands.",
       type: ApplicationCommandOptionTypes.SubCommand,
     },
     {
-      name: "UPDATE_GUILD_NAME",
-      description: "UPDATE_GUILD_DESCRIPTION",
+      name: "guild",
+      description: "Update guild commands for a guild.",
       type: ApplicationCommandOptionTypes.SubCommand,
       options: [
         {
-          name: "UPDATE_GUILD_ID_NAME",
-          description: "UPDATE_GUILD_ID_DESCRIPTION",
+          name: "id",
+          description: "The guild id you wish to manually update.",
           type: ApplicationCommandOptionTypes.String,
           required: true,
         },

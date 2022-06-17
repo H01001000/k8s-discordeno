@@ -10,8 +10,6 @@ import {
   Bot
 } from "../../../deps.ts";
 import { PermissionLevelHandlers } from "../../utils/permLevels.ts";
-import english from "../languages/english.ts";
-import { translationKeys } from "../languages/translate.ts";
 
 // deno-lint-ignore no-explicit-any
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
@@ -21,140 +19,122 @@ type Identity<T> = { [P in keyof T]: T[P] };
 // TODO: make required by default true
 // Define each of the types here
 type BaseDefinition = {
-  description: translationKeys;
+  description: string;
 };
 
 // Subcommand
-type SubcommandArgumentDefinition<N extends translationKeys = translationKeys> =
+type SubcommandArgumentDefinition =
   & BaseDefinition
   & {
-    name: N;
+    name: string;
     type: ApplicationCommandOptionTypes.SubCommand;
     // options: Omit<ArgumentDefinition, 'SubcommandArgumentDefinition' | 'SubcommandGroupArgumentDefinition'>[]
     options?: readonly ArgumentDefinition[];
   };
 
 // SubcommandGroup
-type SubcommandGroupArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type SubcommandGroupArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.SubCommandGroup;
   options: readonly SubcommandArgumentDefinition[];
 };
 
 // String
-type StringArgumentDefinition<N extends translationKeys = translationKeys> =
+type StringArgumentDefinition =
   & BaseDefinition
   & {
-    name: N;
+    name: string;
     type: ApplicationCommandOptionTypes.String;
     choices?: readonly { name: string; value: string }[];
     required?: true;
   };
-type StringOptionalArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type StringOptionalArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.String;
   choices?: readonly { name: string; value: string }[];
   required?: false;
 };
 
 // Integer
-type IntegerArgumentDefinition<N extends translationKeys = translationKeys> =
+type IntegerArgumentDefinition =
   & BaseDefinition
   & {
-    name: N;
+    name: string;
     type: ApplicationCommandOptionTypes.Integer;
     choices?: readonly { name: string; value: number }[];
     required: true;
   };
-type IntegerOptionalArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type IntegerOptionalArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.Integer;
   choices?: readonly { name: string; value: number }[];
   required?: false;
 };
 
 // BOOLEAN
-type BooleanArgumentDefinition<N extends translationKeys = translationKeys> =
+type BooleanArgumentDefinition =
   & BaseDefinition
   & {
-    name: N;
+    name: string;
     type: ApplicationCommandOptionTypes.Boolean;
     required: true;
   };
-type BooleanOptionalArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type BooleanOptionalArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.Boolean;
   required?: false;
 };
 
 // USER
-type UserArgumentDefinition<N extends translationKeys = translationKeys> =
+type UserArgumentDefinition =
   & BaseDefinition
   & {
-    name: N;
+    name: string;
     type: ApplicationCommandOptionTypes.User;
     required: true;
   };
-type UserOptionalArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type UserOptionalArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.User;
   required?: false;
 };
 
 // CHANNEL
-type ChannelArgumentDefinition<N extends translationKeys = translationKeys> =
+type ChannelArgumentDefinition =
   & BaseDefinition
   & {
-    name: N;
+    name: string;
     type: ApplicationCommandOptionTypes.Channel;
     required: true;
   };
-type ChannelOptionalArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type ChannelOptionalArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.Channel;
   required?: false;
 };
 
 // ROLE
-type RoleArgumentDefinition<N extends translationKeys = translationKeys> =
+type RoleArgumentDefinition =
   & BaseDefinition
   & {
-    name: N;
+    name: string;
     type: ApplicationCommandOptionTypes.Role;
     required: true;
   };
-type RoleOptionalArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type RoleOptionalArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.Role;
   required?: false;
 };
 
 // MENTIONABLE
-type MentionableArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type MentionableArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.Mentionable;
   required: true;
 };
-type MentionableOptionalArgumentDefinition<
-  N extends translationKeys = translationKeys,
-> = BaseDefinition & {
-  name: N;
+type MentionableOptionalArgumentDefinition = BaseDefinition & {
+  name: string;
   type: ApplicationCommandOptionTypes.Mentionable;
   required?: false;
 };
@@ -178,8 +158,6 @@ export type ArgumentDefinition =
   | SubcommandArgumentDefinition
   | SubcommandGroupArgumentDefinition;
 
-type getName<K extends translationKeys> = typeof english[K] extends string ? typeof english[K]
-  : never;
 
 // OPTIONALS MUST BE FIRST!!!
 export type ConvertArgumentDefinitionsToArgs<
@@ -187,73 +165,73 @@ export type ConvertArgumentDefinitionsToArgs<
 > = Identity<
   UnionToIntersection<
     {
-      [P in keyof T]: T[P] extends StringOptionalArgumentDefinition<infer N> // STRING
+      [P in keyof T]: T[P] extends StringOptionalArgumentDefinition // STRING
       ? {
-        [_ in getName<N>]?: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
+        [_ in string]?: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
         T[P]["choices"][number]["value"]
         : string;
       }
-      : T[P] extends StringArgumentDefinition<infer N> ? {
-        [_ in getName<N>]: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
+      : T[P] extends StringArgumentDefinition ? {
+        [_ in string]: T[P]["choices"] extends readonly { name: string; value: string }[] ? // @ts-ignore ts being dumb
         T[P]["choices"][number]["value"]
         : string;
       }
       : // INTEGER
-      T[P] extends IntegerOptionalArgumentDefinition<infer N> ? {
-        [_ in getName<N>]?: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
+      T[P] extends IntegerOptionalArgumentDefinition ? {
+        [_ in string]?: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
         T[P]["choices"][number]["value"]
         : number;
       }
-      : T[P] extends IntegerArgumentDefinition<infer N> ? {
-        [_ in getName<N>]: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
+      : T[P] extends IntegerArgumentDefinition ? {
+        [_ in string]: T[P]["choices"] extends readonly { name: string; value: number }[] ? // @ts-ignore ts being dumb
         T[P]["choices"][number]["value"]
         : number;
       }
       : // BOOLEAN
-      T[P] extends BooleanOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: boolean }
-      : T[P] extends BooleanArgumentDefinition<infer N> ? { [_ in getName<N>]: boolean }
+      T[P] extends BooleanOptionalArgumentDefinition ? { [_ in string]?: boolean }
+      : T[P] extends BooleanArgumentDefinition ? { [_ in string]: boolean }
       : // USER
-      T[P] extends UserOptionalArgumentDefinition<infer N> ? {
-        [_ in getName<N>]?: {
+      T[P] extends UserOptionalArgumentDefinition ? {
+        [_ in string]?: {
           user: User;
           member: Member;
         };
       }
-      : T[P] extends UserArgumentDefinition<infer N> ? {
-        [_ in getName<N>]: {
+      : T[P] extends UserArgumentDefinition ? {
+        [_ in string]: {
           user: User;
           member: Member;
         };
       }
       : // CHANNEL
-      T[P] extends ChannelOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: Channel }
-      : T[P] extends ChannelArgumentDefinition<infer N> ? { [_ in getName<N>]: Channel }
+      T[P] extends ChannelOptionalArgumentDefinition ? { [_ in string]?: Channel }
+      : T[P] extends ChannelArgumentDefinition ? { [_ in string]: Channel }
       : // ROLE
-      T[P] extends RoleOptionalArgumentDefinition<infer N> ? { [_ in getName<N>]?: Role }
-      : T[P] extends RoleArgumentDefinition<infer N> ? { [_ in getName<N>]: Role }
+      T[P] extends RoleOptionalArgumentDefinition ? { [_ in string]?: Role }
+      : T[P] extends RoleArgumentDefinition ? { [_ in string]: Role }
       : // MENTIONABLE
-      T[P] extends MentionableOptionalArgumentDefinition<infer N> ? {
-        [_ in getName<N>]?: Role | {
+      T[P] extends MentionableOptionalArgumentDefinition ? {
+        [_ in string]?: Role | {
           user: User;
           member: Member;
         };
       }
-      : T[P] extends MentionableArgumentDefinition<infer N> ? {
-        [_ in getName<N>]: Role | {
+      : T[P] extends MentionableArgumentDefinition ? {
+        [_ in string]: Role | {
           user: User;
           member: Member;
         };
       }
       : // SUBCOMMAND
-      T[P] extends SubcommandArgumentDefinition<infer N> ? {
-        [_ in getName<N>]?: T[P]["options"] extends readonly ArgumentDefinition[] ? // @ts-ignore ignore this for a bit
+      T[P] extends SubcommandArgumentDefinition ? {
+        [_ in string]?: T[P]["options"] extends readonly ArgumentDefinition[] ? // @ts-ignore ignore this for a bit
         ConvertArgumentDefinitionsToArgs<T[P]["options"]>
         : // deno-lint-ignore ban-types
         {};
       }
       : // SUBCOMMAND GROUP
-      T[P] extends SubcommandGroupArgumentDefinition<infer N> ? {
-        [_ in getName<N>]?: ConvertArgumentDefinitionsToArgs<
+      T[P] extends SubcommandGroupArgumentDefinition ? {
+        [_ in string]?: ConvertArgumentDefinitionsToArgs<
           T[P]["options"]
         >;
       }
@@ -264,11 +242,11 @@ export type ConvertArgumentDefinitionsToArgs<
 
 export interface Command<T extends readonly ArgumentDefinition[]> {
   /** The name of the command, used for both slash and message commands. */
-  name: translationKeys;
+  name: string;
   /** The type of command. */
   type?: ApplicationCommandTypes;
   /** The description of the command*/
-  description: translationKeys;
+  description: string;
   // TODO: consider type being a string like "number" | "user" for better ux
   /** The options for the command, used for both slash and message commands. */
   // options?: ApplicationCommandOption[];
