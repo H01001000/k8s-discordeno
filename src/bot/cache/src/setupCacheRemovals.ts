@@ -67,17 +67,15 @@ export function setupCacheRemovals<B extends Bot>(bot: BotWithCache<B>) {
 
   bot.handlers.GUILD_EMOJIS_UPDATE = async function (_, data, shardId) {
     const payload = data.d as DiscordGuildEmojisUpdate;
-    const guild = bot.guilds.get(bot.transformers.snowflake(payload.guild_id));
+    const guild = await bot.guilds.get(bot.transformers.snowflake(payload.guild_id));
 
     if (guild) {
-      // @ts-expect-error: overriding the collection
       guild.emojis! = new RedisCollection("emojis", payload.emojis.map((e) => {
         const emoji: Emoji = bot.transformers.emoji(bot, e);
         return [emoji.id!, emoji];
       }));
 
-      //@ts-expect-error: overriding
-      await (guild.emojis as RedisCollection<Emoji>).loadEntries()
+      await guild.emojis.loadEntries()
     }
 
     GUILD_EMOJIS_UPDATE(bot, data, shardId);
