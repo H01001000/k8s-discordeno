@@ -35,19 +35,20 @@ serve((req) => {
 };
 
 export const bot = enableCachePlugin(
-  createBot({
-    token: DISCORD_TOKEN,
-    botId: BOT_ID,
-    events: {},
-    intents: GATEWAY_INTENTS,
-  })
+  patchBot(
+    createBot({
+      token: DISCORD_TOKEN,
+      botId: BOT_ID,
+      events: {},
+      intents: GATEWAY_INTENTS,
+    })
+  )
 );
 
 enableCacheSweepers(bot);
 
 setupEventHandlers();
 // customizeBotInternals(bot);
-patchBot(bot);
 
 bot.rest = createRestManager({
   token: DISCORD_TOKEN,

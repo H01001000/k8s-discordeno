@@ -60,6 +60,8 @@ export const patchBot = (bot: Bot) => {
 
     return presence as Optionalize<typeof presence>;
   }
+
+  return bot
 }
 
 
