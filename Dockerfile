@@ -5,11 +5,11 @@ FROM lukechannings/deno:v1.22.1 as deps
 WORKDIR /app
 USER deno
 COPY deps.ts .
+RUN deno cache deps.ts
 COPY configs.ts .
 COPY importMap.json .
 COPY src/utils src/utils
 COPY src/constants src/constants
-RUN deno cache deps.ts
 
 FROM lukechannings/deno:v1.22.1 as rest
 COPY --from=deps /deno-dir /deno-dir
