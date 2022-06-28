@@ -62,45 +62,57 @@ if (DEVELOPMENT) {
   // await updateGlobalCommands(bot);
 }
 
-const connection = await connectAmqp(`amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_URL}`);
-const channel = await connection.openChannel();
+while (true) {
+  const connection = await connectAmqp(`amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_URL}`);
 
-channel.declareExchange({
-  exchange: EVENT_EXCHANGE_NAME,
-  durable: true,
-  type: "x-message-deduplication",
-  arguments: {
-    "x-cache-size": 1000,
-    "x-cache-ttl": 500
-  }
-})
+  try {
+    const channel = await connection.openChannel();
 
-await channel.declareQueue({ queue: EVENT_QUEUE_NAME });
-await channel.bindQueue({ exchange: EVENT_EXCHANGE_NAME, queue: EVENT_QUEUE_NAME })
-await channel.consume(
-  { queue: EVENT_QUEUE_NAME },
-  async (args, _props, data) => {
-    const json = (JSON.parse(new TextDecoder().decode(data))) as {
-      data: DiscordGatewayPayload;
-      shardId: number;
-    };
-
-    // EMITS RAW EVENT
-    bot.events.raw(bot, json.data, json.shardId);
-
-    await dispatchRequirements(bot, json.data)
-
-    if (json.data.t && json.data.t !== "RESUMED") {
-      // When a guild or something isn't in cache this will fetch it before doing anything else
-      if (!["READY", "GUILD_LOADED_DD"].includes(json.data.t)) {
-        await bot.events.dispatchRequirements(bot, json.data, json.shardId);
-        // WE ALSO WANT TO UPDATE GUILD SLASH IF NECESSARY AT THIS POINT
-        //await setGuildCommands(bot, json.data);
+    channel.declareExchange({
+      exchange: EVENT_EXCHANGE_NAME,
+      durable: true,
+      type: "x-message-deduplication",
+      arguments: {
+        "x-cache-size": 1000,
+        "x-cache-ttl": 500
       }
+    })
 
-      bot.handlers[json.data.t]?.(bot, json.data, json.shardId);
-    }
-    await channel.ack({ deliveryTag: args.deliveryTag });
-  },
-);
-ready = true
+    await channel.declareQueue({ queue: EVENT_QUEUE_NAME });
+    await channel.bindQueue({ exchange: EVENT_EXCHANGE_NAME, queue: EVENT_QUEUE_NAME })
+    await channel.consume(
+      { queue: EVENT_QUEUE_NAME },
+      async (args, _props, data) => {
+        const json = (JSON.parse(new TextDecoder().decode(data))) as {
+          data: DiscordGatewayPayload;
+          shardId: number;
+        };
+
+        // EMITS RAW EVENT
+        bot.events.raw(bot, json.data, json.shardId);
+
+        await dispatchRequirements(bot, json.data)
+
+        if (json.data.t && json.data.t !== "RESUMED") {
+          // When a guild or something isn't in cache this will fetch it before doing anything else
+          if (!["READY", "GUILD_LOADED_DD"].includes(json.data.t)) {
+            await bot.events.dispatchRequirements(bot, json.data, json.shardId);
+            // WE ALSO WANT TO UPDATE GUILD SLASH IF NECESSARY AT THIS POINT
+            //await setGuildCommands(bot, json.data);
+          }
+
+          bot.handlers[json.data.t]?.(bot, json.data, json.shardId);
+        }
+        await channel.ack({ deliveryTag: args.deliveryTag });
+      },
+    );
+
+    ready = true
+    await connection.closed()
+  } catch (error) {
+    console.error(error);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  } finally {
+    await connection.close()
+  }
+}

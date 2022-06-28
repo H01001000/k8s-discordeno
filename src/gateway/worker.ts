@@ -1,4 +1,5 @@
 // deno-lint-ignore-file
+import { AmqpChannel } from "https://deno.land/x/amqp@v0.17.0/mod.ts";
 import {
   DISCORD_TOKEN,
   EVENT_EXCHANGE_NAME,
@@ -26,8 +27,11 @@ function hashCode(value: string): number {
   return hash;
 };
 
+let channel: AmqpChannel | undefined = undefined
+
 const tryPublish = async (json: any, hash: number) => {
   try {
+    if (!channel) throw new Error("");
     await channel.publish(
       { exchange: EVENT_EXCHANGE_NAME },
       {
@@ -329,15 +333,28 @@ self.onmessage = async function (message: MessageEvent<string>) {
 
 };
 
-const connection = await connectAmqp(`amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_URL}`);
-const channel = await connection.openChannel();
-await channel.declareExchange({
-  exchange: EVENT_EXCHANGE_NAME,
-  durable: true,
-  type: "x-message-deduplication",
-  arguments: {
-    "x-cache-size": 1000,
-    "x-cache-ttl": 500
-  },
 
-})
+while (true) {
+  const connection = await connectAmqp(`amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_URL}`);
+  try {
+    channel = await connection.openChannel();
+    await channel.declareExchange({
+      exchange: EVENT_EXCHANGE_NAME,
+      durable: true,
+      type: "x-message-deduplication",
+      arguments: {
+        "x-cache-size": 1000,
+        "x-cache-ttl": 500
+      },
+    })
+    await connection.closed()
+    channel = undefined
+  } catch (error) {
+    console.error(error);
+    channel = undefined
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  } finally {
+    channel = undefined
+    await connection.close()
+  }
+}

@@ -16,6 +16,7 @@ const rest = createRestManager({
 
 const publisher = await connectRedis({
   hostname: REDIS_URL,
+  maxRetryCount: 0
 })
 
 class RedisRatelimitedPaths extends Map {
@@ -40,6 +41,7 @@ rest.ratelimitedPaths = new RedisRatelimitedPaths()
 
 const subscriber = await connectRedis({
   hostname: REDIS_URL,
+  maxRetryCount: 0
 })
 
 const setSubscribtion = await subscriber.subscribe("setRedisRatelimitedPaths", "deleteRedisRatelimitedPaths");

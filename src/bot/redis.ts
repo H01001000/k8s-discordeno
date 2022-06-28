@@ -3,4 +3,5 @@ import { connectRedis } from "../../deps.ts";
 
 export const redis = await connectRedis({
   hostname: REDIS_URL,
+  maxRetryCount: 0
 })
